@@ -31,7 +31,7 @@
     }
   },
   "jest": {
-      "testURL": "http://localhost/",
-      "testEnvironment": "node"
+    "testURL": "http://localhost/",
+    "testEnvironment": "node"
   }
 }

@@ -4,12 +4,14 @@ const {
   assign,
   forEach,
   isArray,
+  isObject,
   isPlainObject,
-  unset
+  unset,
+  uniq
 } = require('lodash')
 
 class ServerlessMergeConfig {
-  constructor (serverless, options) {
+  constructor(serverless, options) {
     this.serverless = serverless
     this.options = options
 
@@ -20,29 +22,43 @@ class ServerlessMergeConfig {
     }
   }
 
-  mergeConfig () {
+  mergeConfig() {
     this.deepMerge(this.serverless.service)
   }
 
-  deepMerge (obj) {
+  deepMerge(obj, parent) {
     forEach(obj, (value, key, collection) => {
       if (isPlainObject(value) || isArray(value)) {
-        this.deepMerge(value)
+        this.deepMerge(value, obj)
       }
       if (key === '$<<') {
         if (isArray(value)) {
           value.forEach((subValue) => {
-            this.assignValue(collection, subValue)
+            if (parent && isArray(parent)) {
+              parent.push(subValue);
+            }
+            else {
+              this.assignValue(collection, subValue)
+            }
           })
         } else {
           this.assignValue(collection, value)
         }
-        unset(obj, key)
+        unset(obj, key);
+        // remove invalid values
+        if (parent && isArray(parent)) {
+          parent.forEach((value, key) => {
+            if (!value || (isObject(value) && Object.keys(value).length === 0)) {
+              parent.splice(key, 1);
+            }
+          });
+          parent = uniq(parent);
+        }
       }
     })
   }
 
-  assignValue (collection, value) {
+  assignValue(collection, value) {
     if (isPlainObject(value)) {
       // Only merge objects
       assign(collection, value)
